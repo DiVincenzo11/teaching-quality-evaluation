@@ -13,6 +13,8 @@
 - 接口验证通过：三角色登录；未登录401、跨角色403及角色错选拦截；12道单选题与10项参与度配置；评价提交与100分计算；重复评价拦截；答题持久化；教师统计立即刷新；教师反馈及学生查询；管理员统计与动态权重；退出后令牌失效。
 - Windows后端启动脚本 `-CheckOnly` 正确使用Java 21并检测Maven。
 
+- 从仅包含Git已跟踪文件的全新克隆验证：网页和小程序均通过 `npm ci` 安装与构建，后端在只提供环境变量配置的情况下通过 `mvn package`。
+
 ## 为运行与复现修正
 
 - 初始化建表补齐 attendance_rate、study_time、eval_weight、is_excluded 和 pre_question_config。
