@@ -1,0 +1,61 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+      "^nav-bar$": "@/components/nav-bar/index.vue"
+    }
+  },
+  "pages": [
+    { "path": "pages/login/index",    "style": { "navigationBarTitleText": "登录" } },
+    { "path": "pages/login/register", "style": { "navigationBarTitleText": "注册账号" } },
+    { "path": "pages/profile/index",  "style": { "navigationBarTitleText": "个人中心", "navigationStyle": "custom" } },
+
+    { "path": "pages/student/index",           "style": { "navigationBarTitleText": "首页",    "navigationStyle": "custom" } },
+    { "path": "pages/student/evaluate",        "style": { "navigationBarTitleText": "评价教师", "navigationStyle": "custom" } },
+    { "path": "pages/student/eval-form",       "style": { "navigationBarTitleText": "评价问卷" } },
+    { "path": "pages/student/history",         "style": { "navigationBarTitleText": "评价历史", "navigationStyle": "custom" } },
+    { "path": "pages/student/feedback",        "style": { "navigationBarTitleText": "教师反馈", "navigationStyle": "custom" } },
+    { "path": "pages/student/announce",        "style": { "navigationBarTitleText": "公告通知" } },
+    { "path": "pages/student/announce-detail", "style": { "navigationBarTitleText": "公告详情" } },
+
+    { "path": "pages/teacher/index",     "style": { "navigationBarTitleText": "教学概览",  "navigationStyle": "custom" } },
+    { "path": "pages/teacher/eval-view", "style": { "navigationBarTitleText": "评价查看",  "navigationStyle": "custom" } },
+    { "path": "pages/teacher/report",    "style": { "navigationBarTitleText": "教学报告" } },
+    { "path": "pages/teacher/feedback",  "style": { "navigationBarTitleText": "教学反思",  "navigationStyle": "custom" } },
+    { "path": "pages/teacher/announce",  "style": { "navigationBarTitleText": "公告通知" } },
+
+    { "path": "pages/admin/index",     "style": { "navigationBarTitleText": "系统概览",  "navigationStyle": "custom" } },
+    { "path": "pages/admin/analysis",  "style": { "navigationBarTitleText": "数据分析",  "navigationStyle": "custom" } },
+    { "path": "pages/admin/users",     "style": { "navigationBarTitleText": "用户管理" } },
+    { "path": "pages/admin/feedback",  "style": { "navigationBarTitleText": "反馈查看",  "navigationStyle": "custom" } },
+    { "path": "pages/admin/announce",  "style": { "navigationBarTitleText": "公告管理" } },
+    { "path": "pages/admin/semesters", "style": { "navigationBarTitleText": "学期管理" } },
+    { "path": "pages/admin/questions", "style": { "navigationBarTitleText": "题目管理" } },
+    { "path": "pages/admin/keywords",  "style": { "navigationBarTitleText": "关键词管理" } }
+  ],
+  "tabBar": {
+    "custom": true,
+    "color": "#888",
+    "selectedColor": "#1a2a6c",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/student/index",    "text": "首页"  },
+      { "pagePath": "pages/student/evaluate", "text": "评价"  },
+      { "pagePath": "pages/student/history",  "text": "历史"  },
+      { "pagePath": "pages/student/feedback", "text": "反馈"  },
+      { "pagePath": "pages/teacher/index",    "text": "首页"  },
+      { "pagePath": "pages/teacher/eval-view","text": "评价"  },
+      { "pagePath": "pages/teacher/feedback", "text": "反思"  },
+      { "pagePath": "pages/admin/index",      "text": "概览"  },
+      { "pagePath": "pages/admin/analysis",   "text": "分析"  },
+      { "pagePath": "pages/profile/index",    "text": "我的"  }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "教学评价系统",
+    "navigationBarBackgroundColor": "#1a2a6c",
+    "backgroundColor": "#f5f6fa"
+  }
+}

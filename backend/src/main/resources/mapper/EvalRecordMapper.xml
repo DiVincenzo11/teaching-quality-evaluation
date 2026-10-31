@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bishe.teach.mapper.EvalRecordMapper">
+
+    <resultMap id="TeacherStatsMap" type="com.bishe.teach.vo.TeacherEvalStatsVO">
+        <result column="teacher_id"       property="teacherId"/>
+        <result column="real_name"        property="realName"/>
+        <result column="department"       property="department"/>
+        <result column="title"            property="title"/>
+        <result column="avg_score"        property="avgScore"/>
+        <result column="eval_count"       property="evalCount"/>
+        <result column="excluded_count"   property="excludedCount"/>
+        <result column="avg_choice_score" property="avgChoiceScore"/>
+        <result column="avg_essay_score"  property="avgEssayScore"/>
+    </resultMap>
+
+    <!--
+        加权平均统计：
+        - 排除 is_excluded=1 的异常记录
+        - 使用 eval_weight 做加权平均（weight 默认 1.0，历史无前置问题数据兼容）
+        - eval_count 为有效记录数，excluded_count 为剔除数
+    -->
+    <update id="batchUpdateWeightAndExcluded">
+        UPDATE eval_record
+        SET eval_weight = CASE id
+            <foreach collection="records" item="r">
+                WHEN #{r.id} THEN #{r.evalWeight}
+            </foreach>
+            END,
+            is_excluded = CASE id
+            <foreach collection="records" item="r">
+                WHEN #{r.id} THEN #{r.isExcluded}
+            </foreach>
+            END
+        WHERE id IN
+        <foreach collection="records" item="r" open="(" separator="," close=")">
+            #{r.id}
+        </foreach>
+    </update>
+
+    <select id="selectTeacherStats" resultMap="TeacherStatsMap">
+        SELECT
+            r.teacher_id,
+            u.real_name,
+            ti.department,
+            ti.title,
+            ROUND(
+                SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN r.total_score  * COALESCE(r.eval_weight, 1) ELSE 0 END)
+                / NULLIF(SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN COALESCE(r.eval_weight, 1) ELSE 0 END), 0)
+            , 2) AS avg_score,
+            SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN 1 ELSE 0 END) AS eval_count,
+            SUM(CASE WHEN r.is_excluded = 1 THEN 1 ELSE 0 END)                          AS excluded_count,
+            ROUND(
+                SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN r.choice_score * COALESCE(r.eval_weight, 1) ELSE 0 END)
+                / NULLIF(SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN COALESCE(r.eval_weight, 1) ELSE 0 END), 0)
+            , 2) AS avg_choice_score,
+            ROUND(
+                SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN r.essay_score  * COALESCE(r.eval_weight, 1) ELSE 0 END)
+                / NULLIF(SUM(CASE WHEN r.is_excluded = 0 OR r.is_excluded IS NULL THEN COALESCE(r.eval_weight, 1) ELSE 0 END), 0)
+            , 2) AS avg_essay_score
+        FROM eval_record r
+        JOIN sys_user     u  ON u.id          = r.teacher_id
+        JOIN teacher_info ti ON ti.user_id    = r.teacher_id
+        WHERE r.status = 1
+        <if test="semesterId != null">
+            AND r.semester_id = #{semesterId}
+        </if>
+        GROUP BY r.teacher_id, u.real_name, ti.department, ti.title
+        ORDER BY avg_score DESC
+    </select>
+
+</mapper>

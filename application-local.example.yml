@@ -1,0 +1,7 @@
+# Copy to application-local.yml at the project root. Never commit the local file.
+spring:
+  datasource:
+    password: "YOUR_MYSQL_PASSWORD"
+jwt:
+  # Generate with: python -c "import secrets; print(secrets.token_urlsafe(48))"
+  secret: "REPLACE_WITH_A_RANDOM_SECRET_AT_LEAST_32_BYTES_LONG"

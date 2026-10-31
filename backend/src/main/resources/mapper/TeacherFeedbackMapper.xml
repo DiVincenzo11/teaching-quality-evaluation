@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bishe.teach.mapper.TeacherFeedbackMapper">
+
+    <resultMap id="FeedbackListVOMap" type="com.bishe.teach.vo.FeedbackListVO">
+        <result column="id"               property="id"/>
+        <result column="teacher_id"       property="teacherId"/>
+        <result column="teacher_name"     property="teacherName"/>
+        <result column="title"            property="title"/>
+        <result column="course_names"     property="courseNames"/>
+        <result column="semester_id"      property="semesterId"/>
+        <result column="semester_name"    property="semesterName"/>
+        <result column="reflection"       property="reflection"/>
+        <result column="improvement_plan" property="improvementPlan"/>
+        <result column="update_time"      property="updateTime"/>
+        <result column="my_score"         property="myScore"/>
+        <result column="avg_score"        property="avgScore"/>
+    </resultMap>
+
+    <!-- 管理员：按学期、教师筛选，返回含教师名、学期名、职称、科目、均分 -->
+    <select id="selectFeedbackListWithNames" resultMap="FeedbackListVOMap">
+        SELECT f.id, f.teacher_id, u.real_name AS teacher_name,
+               ti.title,
+               (SELECT GROUP_CONCAT(DISTINCT ts2.course_name ORDER BY ts2.course_name SEPARATOR '、')
+                FROM teacher_semester ts2
+                WHERE ts2.teacher_id = f.teacher_id AND ts2.semester_id = f.semester_id
+                  AND ts2.course_name IS NOT NULL AND ts2.course_name != '') AS course_names,
+               f.semester_id, s.semester_name,
+               f.reflection, f.improvement_plan, f.update_time,
+               (SELECT ROUND(AVG(r.total_score), 2) FROM eval_record r
+                WHERE r.teacher_id = f.teacher_id AND r.semester_id = f.semester_id
+                  AND r.status = 1) AS avg_score
+        FROM teacher_feedback f
+        JOIN sys_user u ON u.id = f.teacher_id
+        JOIN semester s ON s.id = f.semester_id
+        LEFT JOIN teacher_info ti ON ti.user_id = f.teacher_id
+        <where>
+            <if test="teacherId != null">
+                AND f.teacher_id = #{teacherId}
+            </if>
+            <if test="semesterId != null">
+                AND f.semester_id = #{semesterId}
+            </if>
+        </where>
+        ORDER BY f.update_time DESC
+    </select>
+
+    <!-- 学生：查看教过自己班级的教师在该学期的反馈（含职称、科目、我的得分、全班均分） -->
+    <select id="selectFeedbackForStudent" resultMap="FeedbackListVOMap">
+        SELECT f.id, f.teacher_id, u.real_name AS teacher_name,
+               ti.title,
+               (SELECT GROUP_CONCAT(DISTINCT ts2.course_name ORDER BY ts2.course_name SEPARATOR '、')
+                FROM teacher_semester ts2
+                WHERE ts2.teacher_id = f.teacher_id AND ts2.semester_id = f.semester_id
+                  AND ts2.course_name IS NOT NULL AND ts2.course_name != '') AS course_names,
+               f.semester_id, s.semester_name,
+               f.reflection, f.improvement_plan, f.update_time,
+               (SELECT r.total_score FROM eval_record r
+                WHERE r.teacher_id = f.teacher_id AND r.semester_id = f.semester_id
+                  AND r.student_id = #{studentId} AND r.status = 1
+                LIMIT 1) AS my_score,
+               (SELECT ROUND(AVG(r2.total_score), 2) FROM eval_record r2
+                WHERE r2.teacher_id = f.teacher_id AND r2.semester_id = f.semester_id
+                  AND r2.status = 1) AS avg_score
+        FROM teacher_feedback f
+        JOIN sys_user u ON u.id = f.teacher_id
+        JOIN semester s ON s.id = f.semester_id
+        LEFT JOIN teacher_info ti ON ti.user_id = f.teacher_id
+        JOIN teacher_semester ts ON ts.teacher_id = f.teacher_id AND ts.semester_id = f.semester_id
+        WHERE f.semester_id = #{semesterId}
+          AND ts.class_start &lt;= #{classNum} AND ts.class_end &gt;= #{classNum}
+        GROUP BY f.id, f.teacher_id, u.real_name, ti.title, f.semester_id, s.semester_name,
+                 f.reflection, f.improvement_plan, f.update_time
+        ORDER BY f.update_time DESC
+    </select>
+</mapper>

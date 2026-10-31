@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bishe.teach.mapper.TeacherInfoMapper">
+
+    <resultMap id="TeacherVOMap" type="com.bishe.teach.vo.TeacherVO">
+        <result column="user_id"    property="userId"/>
+        <result column="username"   property="username"/>
+        <result column="real_name"  property="realName"/>
+        <result column="email"      property="email"/>
+        <result column="phone"      property="phone"/>
+        <result column="avatar"     property="avatar"/>
+        <result column="status"     property="status"/>
+        <result column="teacher_no" property="teacherNo"/>
+        <result column="department" property="department"/>
+        <result column="title"      property="title"/>
+        <result column="courses"    property="courses"/>
+    </resultMap>
+
+    <select id="selectTeacherList" resultMap="TeacherVOMap">
+        SELECT u.id AS user_id, u.username, u.real_name, u.email, u.phone, u.avatar, u.status,
+               t.teacher_no, t.department, t.title, t.courses
+        FROM sys_user u
+        LEFT JOIN teacher_info t ON t.user_id = u.id
+        WHERE u.deleted = 0 AND u.role_type = 2
+        <if test="keyword != null and keyword != ''">
+            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%')
+              OR u.username LIKE CONCAT('%', #{keyword}, '%')
+              OR t.department LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="department != null and department != ''">
+            AND t.department = #{department}
+        </if>
+        ORDER BY u.username ASC
+    </select>
+
+    <!-- 管理员：按学期筛选，courses 字段只展示该学期所授课程（含班级范围） -->
+    <select id="selectTeacherListBySemester" resultMap="TeacherVOMap">
+        SELECT u.id AS user_id, u.username, u.real_name, u.email, u.phone, u.avatar, u.status,
+               t.teacher_no, t.department, t.title,
+               GROUP_CONCAT(DISTINCT CONCAT(ts.course_name, '(', ts.class_start, '-', ts.class_end, '班)')
+                            ORDER BY ts.course_name SEPARATOR ',') AS courses
+        FROM sys_user u
+        LEFT JOIN teacher_info t ON t.user_id = u.id
+        INNER JOIN teacher_semester ts ON ts.teacher_id = u.id AND ts.semester_id = #{semesterId}
+        WHERE u.deleted = 0 AND u.role_type = 2
+        <if test="keyword != null and keyword != ''">
+            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%')
+              OR u.username LIKE CONCAT('%', #{keyword}, '%')
+              OR t.department LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="department != null and department != ''">
+            AND t.department = #{department}
+        </if>
+        GROUP BY u.id, u.username, u.real_name, u.email, u.phone, u.avatar, u.status,
+                 t.teacher_no, t.department, t.title
+        ORDER BY u.username ASC
+    </select>
+
+    <!-- 学生评价：按学期 + 班级号筛选，仅返回教过该班级的老师 -->
+    <select id="selectTeacherListForStudent" resultMap="TeacherVOMap">
+        SELECT u.id AS user_id, u.username, u.real_name, u.email, u.phone, u.avatar, u.status,
+               t.teacher_no, t.department, t.title,
+               GROUP_CONCAT(DISTINCT ts.course_name ORDER BY ts.course_name SEPARATOR '、') AS courses
+        FROM sys_user u
+        LEFT JOIN teacher_info t ON t.user_id = u.id
+        INNER JOIN teacher_semester ts ON ts.teacher_id = u.id
+            AND ts.semester_id = #{semesterId}
+            AND ts.class_start &lt;= #{classNum}
+            AND ts.class_end   &gt;= #{classNum}
+        WHERE u.deleted = 0 AND u.role_type = 2
+        <if test="keyword != null and keyword != ''">
+            AND (u.real_name LIKE CONCAT('%', #{keyword}, '%')
+              OR u.username LIKE CONCAT('%', #{keyword}, '%')
+              OR t.department LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        GROUP BY u.id, u.username, u.real_name, u.email, u.phone, u.avatar, u.status,
+                 t.teacher_no, t.department, t.title
+        ORDER BY u.username ASC
+    </select>
+
+    <!-- 统计某学期某班级学生需评价的教师数量 -->
+    <select id="countTeachersForStudent" resultType="int">
+        SELECT COUNT(DISTINCT u.id)
+        FROM sys_user u
+        INNER JOIN teacher_semester ts ON ts.teacher_id = u.id
+            AND ts.semester_id = #{semesterId}
+            AND ts.class_start &lt;= #{classNum}
+            AND ts.class_end   &gt;= #{classNum}
+        WHERE u.deleted = 0 AND u.role_type = 2
+    </select>
+
+</mapper>

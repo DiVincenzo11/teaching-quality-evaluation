@@ -1,0 +1,25 @@
+{
+  "name": "teach-eval-miniprogram",
+  "version": "1.0.0",
+  "description": "教师教学质量评价系统微信小程序",
+  "scripts": {
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "dev:h5": "uni",
+    "build:h5": "uni build"
+  },
+  "dependencies": {
+    "@dcloudio/uni-components": "^3.0.0-alpha-3000020210521001",
+    "@dcloudio/uni-mp-weixin": "^3.0.0-4080720251210001",
+    "@dcloudio/uni-ui": "^1.4.28",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "*",
+    "@dcloudio/vite-plugin-uni": "3.0.0-4080720251210001",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "sass": "^1.71.0",
+    "vite": "^5.2.8"
+  }
+}

@@ -1,0 +1,183 @@
+﻿<template>
+  <view class="page-bg">
+    <nav-bar title="教师反馈" subtitle="查看教师对学生评价的回应" />
+    <view class="content">
+      <view class="filter-bar card">
+        <text class="fl">学期</text>
+        <picker mode="selector" :range="semLabels" :value="semIndex" @change="onSemChange">
+          <view class="picker-btn">
+            <text>{{ semLabels[semIndex] || '请选择' }}</text>
+            <text class="arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <view v-if="loading" class="loading-box"><text>加载中...</text></view>
+      <view v-else-if="!feedbacks.length" class="empty-box">
+        <text class="empty-icon">💬</text>
+        <text>该学期暂无反馈记录</text>
+      </view>
+      <view v-for="fb in feedbacks" :key="fb.id" class="fb-card" @click="viewDetail(fb)">
+        <view class="fb-head">
+          <view class="avatar-circle">{{ fb.teacherName?.[0] || 'T' }}</view>
+          <view class="fb-info">
+            <text class="fb-name">{{ fb.teacherName }}</text>
+            <text class="fb-meta">{{ fb.title }} · {{ fb.courseNames }}</text>
+          </view>
+          <view class="fb-score-badge" :class="scoreBadgeClass(fb.avgScore)">
+            <text class="fbs-val">{{ fb.avgScore != null ? Number(fb.avgScore).toFixed(2) : '--' }}</text>
+            <text class="fbs-lbl">均分</text>
+          </view>
+        </view>
+        <view class="fb-preview">
+          <text class="fb-label">教学反思：</text>
+          <text class="fb-text">{{ truncate(fb.reflection) }}</text>
+        </view>
+        <view class="fb-footer">
+          <text class="fb-time">{{ fb.updateTime?.slice(0, 10) }}</text>
+          <text class="fb-more">查看详情 ›</text>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="detailVisible" class="modal-mask">
+      <view class="modal-overlay" @click="detailVisible = false" />
+      <view class="modal-box">
+        <view class="modal-header">
+          <view>
+            <text class="modal-title">{{ current?.teacherName }}</text>
+            <text class="modal-sub">{{ current?.courseNames }}</text>
+          </view>
+          <text class="modal-close" @click="detailVisible = false">✕</text>
+        </view>
+        <scroll-view scroll-y style="max-height: 65vh;" v-if="current">
+          <view style="padding: 32rpx 40rpx;">
+            <view class="dg-row">
+              <view class="dg-item">
+                <text class="dg-val">{{ current.avgScore != null ? Number(current.avgScore).toFixed(2) : '--' }}</text>
+                <text class="dg-lbl">学期均分</text>
+              </view>
+              <view class="dg-item">
+                <text class="dg-val" style="font-size: 28rpx;">{{ current.semesterName }}</text>
+                <text class="dg-lbl">学期</text>
+              </view>
+            </view>
+            <view class="section-block">
+              <text class="sb-title">教学反思</text>
+              <text class="sb-content">{{ current.reflection || '暂无内容' }}</text>
+            </view>
+            <view class="section-block">
+              <text class="sb-title">改进计划</text>
+              <text class="sb-content">{{ current.improvementPlan || '暂无内容' }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <custom-tab-bar current-path="pages/student/feedback" />
+  </view>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { studentApi } from '@/api/index'
+import CustomTabBar from '@/components/custom-tab-bar/index.vue'
+
+const semesters     = ref([])
+const semIndex      = ref(0)
+const feedbacks     = ref([])
+const loading       = ref(false)
+const detailVisible = ref(false)
+const current       = ref(null)
+
+const semLabels   = computed(() => semesters.value.map(s => s.semesterName))
+const selectedSem = computed(() => semesters.value[semIndex.value]?.id)
+
+function scoreBadgeClass(s) {
+  const n = Number(s)
+  if (n >= 85) return 'badge-green'
+  if (n >= 70) return 'badge-orange'
+  if (!s && s !== 0) return 'badge-gray'
+  return 'badge-red'
+}
+
+function truncate(s) {
+  if (!s) return '暂无内容'
+  return s.length > 60 ? s.slice(0, 60) + '...' : s
+}
+
+async function onSemChange(e) {
+  semIndex.value = e.detail.value
+  await loadFeedbacks()
+}
+
+async function loadFeedbacks() {
+  if (!selectedSem.value) return
+  loading.value = true
+  try {
+    const res = await studentApi.feedbackList(selectedSem.value)
+    feedbacks.value = res.data || []
+  } finally { loading.value = false }
+}
+
+function viewDetail(fb) { current.value = fb; detailVisible.value = true }
+
+onMounted(async () => {
+  const semRes = await studentApi.allSemesters()
+  semesters.value = semRes.data || []
+  const cur = semesters.value.findIndex(s => s.isCurrent === 1)
+  semIndex.value = cur >= 0 ? cur : 0
+  await loadFeedbacks()
+})
+</script>
+
+<style scoped>
+.page-bg { min-height: 100vh; background: #f5f6fa; padding-bottom: 140rpx; }
+.content { padding: 24rpx; margin-top: -16rpx; }
+.filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+.fl { font-size: 28rpx; color: #606266; }
+.picker-btn { display: flex; align-items: center; gap: 8rpx; font-size: 28rpx; color: #1a2a6c; font-weight: 500; }
+.arrow { color: #c0c4cc; }
+
+.fb-card { background: #fff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 20rpx; box-shadow: 0 2rpx 16rpx rgba(0,0,0,0.06); }
+.fb-head { display: flex; align-items: center; gap: 20rpx; margin-bottom: 20rpx; }
+.fb-info { flex: 1; }
+.fb-name { display: block; font-size: 30rpx; font-weight: 600; color: #303133; margin-bottom: 4rpx; }
+.fb-meta { font-size: 22rpx; color: #909399; }
+.fb-score-badge { display: flex; flex-direction: column; align-items: center; padding: 12rpx 20rpx; border-radius: 16rpx; flex-shrink: 0; }
+.badge-green  { background: #f0f9eb; }
+.badge-orange { background: #fdf6ec; }
+.badge-red    { background: #fef0f0; }
+.badge-gray   { background: #f4f4f5; }
+.fbs-val { font-size: 32rpx; font-weight: 700; display: block; }
+.badge-green  .fbs-val { color: #67c23a; }
+.badge-orange .fbs-val { color: #e6a23c; }
+.badge-red    .fbs-val { color: #f56c6c; }
+.badge-gray   .fbs-val { color: #909399; }
+.fbs-lbl { font-size: 20rpx; color: #909399; }
+.fb-preview { background: #f5f7fa; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 16rpx; }
+.fb-label { font-size: 22rpx; color: #909399; }
+.fb-text  { font-size: 26rpx; color: #303133; line-height: 1.6; }
+.fb-footer { display: flex; justify-content: space-between; align-items: center; }
+.fb-time { font-size: 22rpx; color: #c0c4cc; }
+.fb-more { font-size: 24rpx; color: #409eff; }
+
+.modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; z-index: 1000; }
+.modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); }
+.modal-box  { position: relative; z-index: 1; background: #fff; border-radius: 32rpx 32rpx 0 0; width: 100%; }
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 32rpx 40rpx; border-bottom: 2rpx solid #f0f0f0; }
+.modal-title  { font-size: 32rpx; font-weight: 600; color: #303133; }
+.modal-sub    { display: block; font-size: 24rpx; color: #909399; margin-top: 4rpx; }
+.modal-close  { font-size: 36rpx; color: #c0c4cc; }
+.dg-row { display: flex; gap: 24rpx; margin-bottom: 32rpx; background: #f5f7fa; border-radius: 16rpx; padding: 24rpx; }
+.dg-item { flex: 1; text-align: center; }
+.dg-val { display: block; font-size: 40rpx; font-weight: 700; color: #1a2a6c; margin-bottom: 6rpx; }
+.dg-lbl { font-size: 22rpx; color: #909399; }
+.section-block { margin-bottom: 28rpx; }
+.sb-title { display: block; font-size: 28rpx; font-weight: 600; color: #303133; margin-bottom: 12rpx; padding-bottom: 10rpx; border-bottom: 3rpx solid #1a2a6c; }
+.sb-content { font-size: 26rpx; color: #606266; line-height: 1.8; background: #f5f7fa; border-radius: 12rpx; padding: 20rpx; display: block; }
+</style>
+
+
+

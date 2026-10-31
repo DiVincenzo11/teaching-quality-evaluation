@@ -1,0 +1,31 @@
+# Dependencies, build outputs, local environments
+**/node_modules/
+**/target/
+**/dist/
+**/build/
+**/.venv/
+**/__pycache__/
+*.py[cod]
+*.log
+*.log.*
+*.jar
+*.war
+.env
+.env.*
+!.env.example
+application-local.yml
+**/application-local.yml
+**/application-*.local.yml
+uploads/
+.run/
+.local-env.ps1
+/.vscode/settings.json
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+# Original local datasets are retained locally. Publish synthetic demo data only.
+/sql/*
+!/sql/schema.sql
+!/sql/demo-data.sql
+/scripts/teachers_with_negative.txt
